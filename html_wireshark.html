@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Filters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        caption {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        #language-selector {
+            margin-bottom: 20px;
+        }
+		.container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+		.header {
+			display: block;
+			margin: 0 auto;
+			text-align: center;
+		}
+		#language-selector {
+			display: block;
+			padding: 5px 5px;
+			border-radius: 8px;
+			border-color: #2371aa;
+			background-color: #DAE4F0;
+		}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header"><h1>Packet Filters</h1></div>
+
+    <!-- Language Selector -->
+    <select id="language-selector" onchange="changeLanguage(event)">
+        <option value="en">English</option>
+        <option value="ua">Ukrainian</option>
+    </select>
+
+    <table>
+        <thead>
+            <tr>
+                <th id="filter-header">Filter</th>
+                <th id="description-header">Description</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <!-- Table rows will be dynamically updated based on language -->
+        </tbody>
+    </table>
+</div>
+    <script>
+        const filters = {
+            en: [
+                { filter: "ip.src == 192.168.1.1", description: "Filter packets sent from IP address 192.168.1.1" },
+                { filter: "ip.dst == 192.168.1.1", description: "Filter packets destined for IP address 192.168.1.1" },
+                { filter: "ip.addr == 192.168.1.1", description: "Filter packets containing the specified IP in source or destination" },
+                { filter: "tcp.port == 80", description: "Filter HTTP traffic (port 80)" },
+                { filter: "udp.port == 53", description: "Filter DNS traffic (port 53)" },
+                { filter: "tcp.flags.syn == 1 && tcp.flags.ack == 0", description: "Filter SYN packets (beginning of a TCP connection)" },
+                { filter: "tcp.flags.fin == 1", description: "Filter FIN packets (end of a TCP connection)" },
+                { filter: "tcp.flags.reset == 1", description: "Filter TCP RST packets (connection reset)" },
+                { filter: "http", description: "Filter only HTTP traffic" },
+                { filter: "dns", description: "Filter only DNS traffic" },
+                { filter: "arp", description: "Filter ARP requests and replies" },
+                { filter: "icmp", description: "Filter ICMP traffic (e.g., ping requests)" },
+                { filter: "tcp.stream eq 1", description: "Filter all packets of a specific TCP stream" },
+                { filter: "ssl", description: "Filter only TLS/SSL traffic" },
+                { filter: "ftp", description: "Filter FTP traffic" },
+                { filter: "dhcp", description: "Filter DHCP requests and replies" },
+                { filter: "telnet", description: "Filter Telnet traffic" },
+                { filter: "smtp", description: "Filter SMTP traffic (mail protocol)" },
+                { filter: "pop3", description: "Filter POP3 traffic (mail retrieval protocol)" },
+                { filter: "imap", description: "Filter IMAP traffic (email protocol)" },
+                { filter: "ether.src == 00:11:22:33:44:55", description: "Filter by source MAC address" },
+                { filter: "ether.dst == 00:11:22:33:44:55", description: "Filter by destination MAC address" },
+                { filter: "wlan", description: "Filter wireless Wi-Fi traffic" },
+                { filter: 'wlan.ssid == "MyWiFi"', description: "Filter packets related to the specified SSID Wi-Fi network" },
+                { filter: "ip.ttl < 10", description: "Filter packets with low TTL (possible routing loop)" },
+                { filter: "tcp.analysis.flags", description: "Filter problematic TCP packets (retransmissions, losses)" },
+                { filter: "ip.len > 1000", description: "Filter packets larger than 1000 bytes" },
+                { filter: "tcp.window_size < 500", description: "Filter TCP packets with small window size (low performance)" },
+                { filter: "tcp.analysis.retransmission", description: "Filter TCP retransmissions" },
+                { filter: "tcp.analysis.lost_segment", description: "Filter lost TCP segments" },
+                { filter: "frame.time_relative > 1", description: "Filter packets with delay greater than 1 second" },
+                { filter: "ip.frag_offset > 0", description: "Filter fragmented IP packets" },
+                { filter: "ip.flags.mf == 1", description: "Filter IP packets requiring further assembly" },
+                { filter: "udp.length > 512", description: "Filter large UDP packets" },
+                { filter: "icmp.type == 3", description: "Filter ICMP Destination Unreachable" },
+                { filter: "icmp.type == 8", description: "Filter ICMP Echo Request (ping)" },
+                { filter: "icmp.type == 0", description: "Filter ICMP Echo Reply (ping response)" },
+                { filter: "not arp", description: "Filter excluding ARP traffic" },
+                { filter: "not broadcast and not multicast", description: "Filter excluding broadcast and multicast traffic" },
+                { filter: "frame.number == 100", description: "Filter a specific packet (number 100)" },
+                { filter: "frame.time_delta > 0.5", description: "Filter packets with delay greater than 500ms between them" },
+                { filter: 'http.request.method == "POST"', description: "Filter only HTTP POST requests" },
+                { filter: "http.response.code == 404", description: "Filter HTTP responses with 404 code (Not Found)" },
+                { filter: 'http.host contains "example.com"', description: "Filter HTTP requests to the specified domain" },
+                { filter: "tls.handshake.type == 1", description: "Filter TLS Client Hello (beginning of TLS session)" },
+                { filter: "tls.handshake.type == 2", description: "Filter TLS Server Hello" },
+                { filter: 'dns.qry.name contains "example.com"', description: "Filter DNS queries for the specified domain" },
+                { filter: 'ip.geoip.country == "USA"', description: "Filter packets coming from USA (if GeoIP is available)" }
+            ],
+            ua: [
+                { filter: "ip.src == 192.168.1.1", description: "Фільтр пакетів, надісланих з IP-адреси 192.168.1.1" },
+                { filter: "ip.dst == 192.168.1.1", description: "Фільтр пакетів, призначених для IP-адреси 192.168.1.1" },
+                { filter: "ip.addr == 192.168.1.1", description: "Фільтр пакетів, що містять вказану IP-адресу в джерелі або призначенні" },
+                { filter: "tcp.port == 80", description: "Фільтр HTTP трафіку (порт 80)" },
+                { filter: "udp.port == 53", description: "Фільтр DNS трафіку (порт 53)" },
+                { filter: "tcp.flags.syn == 1 && tcp.flags.ack == 0", description: "Фільтр SYN-пакетів (початок TCP-з'єднання)" },
+                { filter: "tcp.flags.fin == 1", description: "Фільтр FIN-пакетів (кінець TCP-з'єднання)" },
+                { filter: "tcp.flags.reset == 1", description: "Фільтр TCP RST-пакетів (скидання з'єднання)" },
+                { filter: "http", description: "Фільтр лише HTTP трафіку" },
+                { filter: "dns", description: "Фільтр лише DNS трафику" },
+                { filter: "arp", description: "Фільтр ARP-запитів і відповідей" },
+                { filter: "icmp", description: "Фільтр ICMP трафіку (наприклад, ping-запитів)" },
+                { filter: "tcp.stream eq 1", description: "Фільтр всіх пакетів конкретного TCP-потоку" },
+                { filter: "ssl", description: "Фільтр лише TLS/SSL трафіку" },
+                { filter: "ftp", description: "Фільтр FTP трафіку" },
+                { filter: "dhcp", description: "Фільтр DHCP-запитів і відповідей" },
+                { filter: "telnet", description: "Фільтр Telnet трафіку" },
+                { filter: "smtp", description: "Фільтр SMTP трафіку (поштовий протокол)" },
+                { filter: "pop3", description: "Фільтр POP3 трафіку (протокол отримання пошти)" },
+                { filter: "imap", description: "Фільтр IMAP трафіку (протокол електронної пошти)" },
+                { filter: "ether.src == 00:11:22:33:44:55", description: "Фільтр за MAC-адресою джерела" },
+                { filter: "ether.dst == 00:11:22:33:44:55", description: "Фільтр за MAC-адресою призначення" },
+                { filter: "wlan", description: "Фільтр бездротового Wi-Fi трафіку" },
+                { filter: 'wlan.ssid == "MyWiFi"', description: "Фільтр пакетів, що належать до вказаної SSID Wi-Fi мережі" },
+                { filter: "ip.ttl < 10", description: "Фільтр пакетів з низьким TTL (можлива петля маршрутизації)" },
+                { filter: "tcp.analysis.flags", description: "Фільтр проблемних TCP-пакетів (повторні передачі, втрати)" },
+                { filter: "ip.len > 1000", description: "Фільтр пакетів, більших за 1000 байт" },
+                { filter: "tcp.window_size < 500", description: "Фільтр TCP-пакетів з маленьким розміром вікна (низька продуктивність)" },
+                { filter: "tcp.analysis.retransmission", description: "Фільтр повторних передач TCP-пакетів" },
+                { filter: "tcp.analysis.lost_segment", description: "Фільтр втрачених TCP-сегментів" },
+                { filter: "frame.time_relative > 1", description: "Фільтр пакетів із затримкою понад 1 секунду" },
+                { filter: "ip.frag_offset > 0", description: "Фільтр фрагментованих IP-пакетів" },
+                { filter: "ip.flags.mf == 1", description: "Фільтр IP-пакетів, що потребують подальшої зборки" },
+                { filter: "udp.length > 512", description: "Фільтр великих UDP-пакетів" },
+                { filter: "icmp.type == 3", description: "Фільтр ICMP Destination Unreachable" },
+                { filter: "icmp.type == 8", description: "Фільтр ICMP Echo Request (ping-запит)" },
+                { filter: "icmp.type == 0", description: "Фільтр ICMP Echo Reply (ping-відповідь)" },
+                { filter: "not arp", description: "Фільтр, що виключає ARP-трафік" },
+                { filter: "not broadcast and not multicast", description: "Фільтр, що виключає широкомовний і багатомовний трафік" },
+                { filter: "frame.number == 100", description: "Фільтр конкретного пакета (номер 100)" },
+                { filter: "frame.time_delta > 0.5", description: "Фільтр пакетів із затримкою більше ніж 500 мс між ними" },
+                { filter: 'http.request.method == "POST"', description: "Фільтр лише HTTP POST запитів" },
+                { filter: "http.response.code == 404", description: "Фільтр HTTP-відповідей з кодом 404 (Не знайдено)" },
+                { filter: 'http.host contains "example.com"', description: "Фільтр HTTP запитів до вказаного домену" },
+                { filter: "tls.handshake.type == 1", description: "Фільтр TLS Client Hello (початок TLS-сесії)" },
+                { filter: "tls.handshake.type == 2", description: "Фільтр TLS Server Hello" },
+                { filter: 'dns.qry.name contains "example.com"', description: "Фільтр DNS-запитів для вказаного домену" },
+                { filter: 'ip.geoip.country == "USA"', description: "Фільтр пакетів, що приходять з США (якщо доступний GeoIP)" }
+            ]
+        };
+
+        // Function to update table based on selected language
+        function changeLanguage(event) {
+            const lang = event.target.value;
+            const tableBody = document.getElementById('table-body');
+            const filterHeader = document.getElementById('filter-header');
+            const descriptionHeader = document.getElementById('description-header');
+
+            // Set the table headers based on the selected language
+            if (lang === 'en') {
+                filterHeader.textContent = 'Filter';
+                descriptionHeader.textContent = 'Description';
+            } else if (lang === 'ua') {
+                filterHeader.textContent = 'Фільтр';
+                descriptionHeader.textContent = 'Опис';
+            } else if (lang === 'pl') {
+                filterHeader.textContent = 'Filtr';
+                descriptionHeader.textContent = 'Opis';
+            }
+
+            // Clear current table rows
+            tableBody.innerHTML = '';
+
+            // Populate table rows based on the selected language
+            const selectedFilters = filters[lang];
+            selectedFilters.forEach(item => {
+                const row = document.createElement('tr');
+                const filterCell = document.createElement('td');
+                const descriptionCell = document.createElement('td');
+
+                filterCell.textContent = item.filter;
+                descriptionCell.textContent = item.description;
+
+                row.appendChild(filterCell);
+                row.appendChild(descriptionCell);
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Initialize table with English language by default
+        document.addEventListener('DOMContentLoaded', () => {
+            changeLanguage({ target: { value: 'en' } });
+        });
+    </script>
+</body>
+</html>
